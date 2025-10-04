@@ -11,7 +11,6 @@ async function tradeCmd(ctx: Context) {
   try {
     await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
 
-    // Get user's default leverage and amount from database if they exist
     const userDefaults = await prisma.user.findUnique({
       where: { id: userId },
       select: { defaultLeverage: true, defaultAmount: true },
@@ -33,4 +32,4 @@ async function tradeCmd(ctx: Context) {
   }
 }
 
-export { tradeCmd };
+export default tradeCmd;

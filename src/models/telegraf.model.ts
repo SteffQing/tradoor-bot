@@ -1,17 +1,17 @@
 import type { Context as TelegrafContext } from "telegraf";
 import type { Exchange } from "../constants";
-import type { ExchangeInit, TradeConfig } from "./db.model";
+import type { ExchangeConfig, TradeConfig } from "./db.model";
+
+type RegisterState = "api_key" | "api_secret" | "password";
+type TradeState = keyof TradeConfig;
 
 interface Session {
-  state:
-    | "idle"
-    | "awaiting_api_key"
-    | "awaiting_api_secret"
-    | "awaiting_password";
+  state: "idle" | `register:${RegisterState}` | `trade:${TradeState}`;
   lastInteraction: number;
   exchange: Exchange | undefined;
-  exchangeInit: ExchangeInit | undefined;
+  exchangeConfig: ExchangeConfig | undefined;
   tradeConfig: TradeConfig | undefined;
+  toDeleteMessageIds: number[];
 }
 
 type Context = TelegrafContext & {

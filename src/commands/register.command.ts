@@ -28,4 +28,4 @@ async function registerExchangeCmd(ctx: Context) {
   }
 }
 
-export { registerExchangeCmd };
+export default registerExchangeCmd;

@@ -4,7 +4,7 @@ export interface SessionRow {
   value: string;
 }
 
-type ExchangeInit = Partial<{
+type ExchangeConfig = Partial<{
   apiKey: string;
   apiSecret: string;
   password: string;
@@ -21,4 +21,4 @@ type TradeConfig = Partial<{
   side: "buy" | "sell";
 }>;
 
-export type { ExchangeInit, TradeConfig };
+export type { ExchangeConfig, TradeConfig };

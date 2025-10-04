@@ -100,6 +100,9 @@ npx prisma migrate dev --name init
 pnpm start
 ```
 
+### 6. Deploy to production
+Simply upload to render or railway and set environment variables.
+
 ---
 
 ## 🔹 Contributing

@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { getEnv } from ".";
 
 const ENCRYPTION_KEY = getEnv("ENCRYPTION_KEY"); // Must be 32 characters for aes-256
+console.log("Encryption Key Length:", ENCRYPTION_KEY.length, ENCRYPTION_KEY);
 if (ENCRYPTION_KEY.length !== 32) {
   throw new Error("ENCRYPTION_KEY must be 32 characters long");
 }

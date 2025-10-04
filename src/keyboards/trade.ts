@@ -4,52 +4,52 @@ function tradeKeyboard(config: TradeConfig | undefined) {
   const keyboard1 = [
     {
       text: config?.side ?? "Set Side",
-      callback_data: "trade_set_side",
+      callback_data: "trade:side",
     },
     {
       text: config?.token ?? "Set Token",
-      callback_data: "trade_set_token",
+      callback_data: "trade:token",
     },
     {
       text: config?.leverage ? config.leverage + "x" : "Not set",
-      callback_data: "trade_set_leverage",
+      callback_data: "trade:leverage",
     },
   ];
 
   const keyboard2 = [
     {
       text: config?.entryPrice ?? "Set Entry Price",
-      callback_data: "trade_set_entry_price",
+      callback_data: "trade:entryPrice",
     },
     {
       text: config?.amount ?? "Set Trade Amount",
-      callback_data: "trade_set_amount",
+      callback_data: "trade:amount",
     },
     {
       text: config?.exchange ?? "Select Exchange",
-      callback_data: "trade_set_exchange",
+      callback_data: "trade:exchange",
     },
   ];
 
   const keyboard3 = [
     {
       text: config?.takeProfit ?? "Set Take Profit",
-      callback_data: "trade_set_take_profit",
+      callback_data: "trade:takeProfit",
     },
     {
       text: config?.stopLoss ?? "Set Stop Loss",
-      callback_data: "trade_set_stop_loss",
+      callback_data: "trade:stopLoss",
     },
   ];
 
   const keyboard4 = [
     {
       text: "Execute Trade",
-      callback_data: "trade_execute",
+      callback_data: "trade:execute",
     },
     {
       text: "Clear All",
-      callback_data: "trade_clear",
+      callback_data: "trade:clear",
     },
   ];
 

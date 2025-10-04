@@ -20,8 +20,9 @@ const getDefaultSession = (): Session => ({
   lastInteraction: Date.now(),
   state: "idle",
   exchange: undefined,
-  exchangeInit: undefined,
+  exchangeConfig: undefined,
   tradeConfig: undefined,
+  toDeleteMessageIds: [],
 });
 
 export { asyncPipe, getDefaultSession, getEnv };

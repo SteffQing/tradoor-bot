@@ -1,9 +1,8 @@
 import type { Context } from "../models/telegraf.model";
 import prisma from "../db/prisma";
 import { capitalize } from "../utils/helpers";
-import { encrypt } from "../utils/encryption";
-import ccxt from "ccxt";
 import { type Exchange } from "../constants";
+import { finalizeExchangeRegistration } from "../handlers/register.handler";
 
 async function registerExchangeCallback(ctx: Context) {
   const uid = ctx.from?.id;
@@ -40,18 +39,23 @@ async function registerExchangeCallback(ctx: Context) {
     }
 
     ctx.session.exchange = exchangeName;
-    ctx.session.state = "awaiting_api_key";
-    ctx.session.exchangeInit = {};
+    ctx.session.state = "register:api_key";
+    ctx.session.exchangeConfig = {};
 
     await ctx.answerCbQuery();
-    await ctx.reply(
+    const message = await ctx.reply(
       `Great! Let's register ${capitalize(
         exchangeName
       )}.\n\nPlease enter your API key:`
     );
+
+    ctx.session.toDeleteMessageIds.push(message.message_id);
   } catch (err) {
     console.error("Error in registerExchangeCallback:", err);
-    await ctx.reply("⚠️ Something went wrong while registering your exchange.");
+    const { message_id } = await ctx.reply(
+      "⚠️ Something went wrong while registering your exchange."
+    );
+    ctx.session.toDeleteMessageIds.push(message_id);
   }
 }
 
@@ -63,75 +67,37 @@ async function exchangeMessageHandler(ctx: Context) {
   if (!text) return;
 
   switch (ctx.session.state) {
-    case "awaiting_api_key":
-      ctx.session.exchangeInit!.apiKey = text;
-      ctx.session.state = "awaiting_api_secret";
-      await ctx.reply("✅ API key received.\nPlease enter your API secret:");
+    case "register:api_key":
+      ctx.session.exchangeConfig!.apiKey = text;
+      ctx.session.state = "register:api_secret";
+      const { message_id } = await ctx.reply(
+        "✅ API key received.\nPlease enter your API secret:"
+      );
+      ctx.session.toDeleteMessageIds.push(message_id);
       break;
 
-    case "awaiting_api_secret":
-      ctx.session.exchangeInit!.apiSecret = text;
+    case "register:api_secret":
+      ctx.session.exchangeConfig!.apiSecret = text;
 
       const exchangesWithPassword = ["kucoinfutures", "okx"];
       if (exchangesWithPassword.includes(ctx.session.exchange)) {
-        ctx.session.state = "awaiting_password";
-        await ctx.reply("Please enter your API password/passphrase:");
+        ctx.session.state = "register:password";
+        const { message_id } = await ctx.reply(
+          "Please enter your API password/passphrase:"
+        );
+        ctx.session.toDeleteMessageIds.push(message_id);
       } else {
         await finalizeExchangeRegistration(ctx);
       }
       break;
 
-    case "awaiting_password":
-      ctx.session.exchangeInit!.password = text;
+    case "register:password":
+      ctx.session.exchangeConfig!.password = text;
       await finalizeExchangeRegistration(ctx);
       break;
 
     default:
       break;
-  }
-}
-
-async function finalizeExchangeRegistration(ctx: Context) {
-  const uid = ctx.from?.id;
-  const exchangeName = ctx.session.exchange;
-  const { apiKey, apiSecret, password } = ctx.session.exchangeInit || {};
-
-  if (!uid || !exchangeName || !apiKey || !apiSecret) return;
-
-  try {
-    const ExchangeClass = ccxt[exchangeName as Exchange];
-
-    const exchange = new ExchangeClass({
-      apiKey,
-      secret: apiSecret,
-      ...(password ? { password } : {}),
-      enableRateLimit: true,
-    });
-
-    await exchange.loadMarkets(); // validate credentials - throw if it fails
-
-    await prisma.exchangeAccount.create({
-      data: {
-        userId: uid,
-        exchangeName,
-        apiKeyEncrypted: encrypt(apiKey),
-        apiSecretEncrypted: encrypt(apiSecret),
-        passwordEncrypted: password ? encrypt(password) : null,
-      },
-    });
-
-    ctx.session.state = "idle";
-    ctx.session.exchange = undefined;
-    ctx.session.exchangeInit = undefined;
-
-    await ctx.reply(`✅ ${capitalize(exchangeName)} registered successfully!`);
-  } catch (err: any) {
-    console.error("Exchange registration error:", err);
-    ctx.session.state = "awaiting_api_key";
-    ctx.session.exchangeInit = undefined;
-    await ctx.reply(
-      "⚠️ Failed to register exchange. Check your credentials and try again.\nPlease enter your API key again:"
-    );
   }
 }
 
