@@ -1,8 +1,8 @@
 # ====== Builder stage ======
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
-RUN apk add --no-cache bash libc6-compat openssl
+RUN apt-get update -y && apt-get install -y bash openssl
 
 WORKDIR /app
 
@@ -28,10 +28,10 @@ RUN pnpm build
 
 
 # ====== Production stage ======
-FROM node:20-alpine
+FROM node:20-slim
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
-RUN apk add --no-cache bash libc6-compat openssl
+RUN apt-get update -y && apt-get install -y bash openssl
 
 WORKDIR /app
 
