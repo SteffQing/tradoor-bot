@@ -201,9 +201,9 @@ async function tradeMessageHandler(ctx: Context) {
 
           console.error("Trade execution error:", err);
           await ctx.reply(
-            `⚠️ Trade execution failed: ${
-              err instanceof Error ? err.message : String(err)
-            }`
+            err instanceof Error
+              ? err.message
+              : `⚠️ Trade execution failed: ${String(err)}`
           );
         }
       }

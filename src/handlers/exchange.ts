@@ -78,9 +78,17 @@ async function makeTrade(uid: number, params: TradeConfig) {
     try {
       await exchange.setLeverage(parseInt(leverage), symbol);
     } catch (err) {
+      if (/delivery/i.test((err as Error).message)) {
+        throw new Error(
+          `Your API key does not have the required futures permissions for this contract. ` +
+            `Check your ${capitalize(
+              exchangeName
+            )} dashboard and enable USDT-margined futures.`
+        );
+      }
       console.warn(`Leverage setting failed on ${exchangeName}: ${err}`);
       throw new Error(
-        `Leverage setting failed on ${capitalize(exchangeName)} : ${err}`
+        `Leverage setting failed on ${capitalize(exchangeName)}: ${err}`
       );
     }
   }
