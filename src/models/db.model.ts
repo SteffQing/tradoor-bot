@@ -19,6 +19,8 @@ type TradeConfig = Partial<{
   stopLoss: string;
   entryPrice: string;
   side: "buy" | "sell";
+  clear: string;
+  execute: string;
 }>;
 
 export type { ExchangeConfig, TradeConfig };

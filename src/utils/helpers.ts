@@ -10,4 +10,16 @@ function chunk<T>(arr: T[], size: number): T[][] {
   return res;
 }
 
-export { capitalize, chunk };
+function parsePositiveNumber(input: string): number | null {
+  const match = input.match(/^\d+(\.\d+)?$/);
+  if (!match) return null;
+  return parseFloat(match[0]);
+}
+
+function parseLeverage(input: string): number | null {
+  const num = parsePositiveNumber(input);
+  if (!num || num < 1) return null;
+  return Math.round(num);
+}
+
+export { capitalize, chunk, parseLeverage, parsePositiveNumber };

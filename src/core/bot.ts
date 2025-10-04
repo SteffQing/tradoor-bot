@@ -14,7 +14,10 @@ import {
   exchangeMessageHandler,
   registerExchangeCallback,
 } from "../callbacks/register.callback";
-import { tradeCallback } from "../callbacks/trade.callback";
+import {
+  tradeCallback,
+  tradeMessageHandler,
+} from "../callbacks/trade.callback";
 // import type { Update } from "telegraf/typings/core/types/typegram";
 
 async function init(fastify: FastifyInstance) {
@@ -45,7 +48,7 @@ async function init(fastify: FastifyInstance) {
         bot.on("message", async (ctx, next) => {
           const { state } = ctx.session;
           if (state.startsWith("register:")) await exchangeMessageHandler(ctx);
-          // else if (state.startsWith("trade:")) await parserCallback(ctx);
+          else if (state.startsWith("trade:")) await tradeMessageHandler(ctx);
           return await next();
         });
 

@@ -1,17 +1,20 @@
 import type { TradeConfig } from "../models/db.model";
+import { capitalize } from "../utils/helpers";
 
 function tradeKeyboard(config: TradeConfig | undefined) {
   const keyboard1 = [
     {
-      text: config?.side ?? "Set Side",
+      text: config?.side ? capitalize(config.side) : "Set direction",
       callback_data: "trade:side",
     },
     {
-      text: config?.token ?? "Set Token",
+      text: config?.token ?? "Set token",
       callback_data: "trade:token",
     },
     {
-      text: config?.leverage ? config.leverage + "x" : "Not set",
+      text: config?.leverage
+        ? config.leverage + "x"
+        : "set leverage (or use default)",
       callback_data: "trade:leverage",
     },
   ];
@@ -26,7 +29,7 @@ function tradeKeyboard(config: TradeConfig | undefined) {
       callback_data: "trade:amount",
     },
     {
-      text: config?.exchange ?? "Select Exchange",
+      text: config?.exchange ? capitalize(config?.exchange) : "Select Exchange",
       callback_data: "trade:exchange",
     },
   ];

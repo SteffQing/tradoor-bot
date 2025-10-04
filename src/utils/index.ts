@@ -23,6 +23,7 @@ const getDefaultSession = (): Session => ({
   exchangeConfig: undefined,
   tradeConfig: undefined,
   toDeleteMessageIds: [],
+  msgId: undefined,
 });
 
 export { asyncPipe, getDefaultSession, getEnv };

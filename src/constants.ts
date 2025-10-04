@@ -10,4 +10,8 @@ type Exchange = (typeof exchanges)[number];
 
 const REPORT = 976665869;
 
-export { exchanges, type Exchange, REPORT };
+const tradeMsg =
+  "Configure your trade details:" +
+  "⚠️ Remember: trading futures is risky. Make sure your settings match your risk tolerance.";
+
+export { exchanges, type Exchange, REPORT, tradeMsg };

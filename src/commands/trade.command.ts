@@ -1,6 +1,7 @@
 import { tradeKeyboard } from "../keyboards/trade";
 import type { Context } from "../models/telegraf.model";
 import prisma from "../db/prisma";
+import { tradeMsg } from "../constants";
 
 async function tradeCmd(ctx: Context) {
   if (ctx.chat?.type !== "private") return;
@@ -10,6 +11,7 @@ async function tradeCmd(ctx: Context) {
 
   try {
     await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
+    await ctx.deleteMessage(ctx.message?.message_id).catch(() => {});
 
     const userDefaults = await prisma.user.findUnique({
       where: { id: userId },
@@ -17,18 +19,29 @@ async function tradeCmd(ctx: Context) {
     });
 
     if (!userDefaults) {
-      await ctx.reply("⚠️ You need to register first by sending /register.");
+      const { message_id } = await ctx.reply(
+        "⚠️ You need to register first by sending /register."
+      );
+      ctx.session.toDeleteMessageIds.push(message_id);
       return;
     }
 
+    ctx.session.tradeConfig = {
+      leverage: userDefaults.defaultLeverage.toString(),
+      amount: userDefaults.defaultAmount.toString(),
+    };
     const keyboard = tradeKeyboard(ctx.session.tradeConfig);
 
-    await ctx.reply("Configure your trade details:", {
+    const { message_id } = await ctx.reply(tradeMsg, {
       reply_markup: keyboard,
     });
+    ctx.session.msgId = message_id;
   } catch (err) {
     console.error("Error in /trade command:", err);
-    await ctx.reply("⚠️ Something went wrong while loading trade options.");
+    const { message_id } = await ctx.reply(
+      "⚠️ Something went wrong while loading trade options."
+    );
+    ctx.session.toDeleteMessageIds.push(message_id);
   }
 }
 

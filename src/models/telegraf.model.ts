@@ -12,6 +12,7 @@ interface Session {
   exchangeConfig: ExchangeConfig | undefined;
   tradeConfig: TradeConfig | undefined;
   toDeleteMessageIds: number[];
+  msgId: number | undefined;
 }
 
 type Context = TelegrafContext & {
