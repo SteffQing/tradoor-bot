@@ -16,6 +16,7 @@ import handleExecute from "../handlers/trade.execute";
 import { parseLeverage, parsePositiveNumber } from "../utils/helpers";
 import { Exchange, exchanges, tradeMsg } from "../constants";
 import { tradeKeyboard } from "../keyboards/trade";
+import { makeTrade } from "../handlers/exchange";
 
 async function tradeCallback(ctx: Context) {
   if (
@@ -78,12 +79,6 @@ async function tradeCallback(ctx: Context) {
   } catch (err) {
     console.error("Error in trade callback:", err);
     await ctx.answerCbQuery("An error occurred while processing your request.");
-    // } finally {
-    //   await Promise.all(
-    //     ctx.session.toDeleteMessageIds.map((id) =>
-    //       ctx.deleteMessage(id).catch(() => {})
-    //     )
-    //   );
   }
 }
 
@@ -96,7 +91,6 @@ async function tradeMessageHandler(ctx: Context) {
   ctx.deleteMessage(ctx.message.message_id).catch(() => {});
 
   const state = ctx.session.state;
-  console.log(state, text, "TMH");
 
   switch (state) {
     case "trade:side":
@@ -107,7 +101,7 @@ async function tradeMessageHandler(ctx: Context) {
       break;
 
     case "trade:token":
-      ctx.session.tradeConfig.token = text.toUpperCase();
+      ctx.session.tradeConfig.token = text.trim().toUpperCase();
       break;
 
     case "trade:leverage":
@@ -115,34 +109,40 @@ async function tradeMessageHandler(ctx: Context) {
       if (lev) ctx.session.tradeConfig.leverage = lev.toString();
       else await handleLeverage(ctx);
       break;
+
     case "trade:amount":
       const amt = parsePositiveNumber(text);
       if (amt) ctx.session.tradeConfig.amount = amt.toString();
       else await handleAmount(ctx);
       break;
+
     case "trade:entryPrice":
       const ep = parsePositiveNumber(text);
       if (ep) ctx.session.tradeConfig.amount = ep.toString();
       else await handleEntryPrice(ctx);
       break;
+
     case "trade:takeProfit":
       const tp = parsePositiveNumber(text);
       if (tp) ctx.session.tradeConfig.takeProfit = tp.toString();
       else await handleTakeProfit(ctx);
       break;
+
     case "trade:stopLoss":
       const sl = parsePositiveNumber(text);
       if (sl) ctx.session.tradeConfig.stopLoss = sl.toString();
       else handleStopLoss(ctx);
       break;
+
     case "trade:exchange":
       const exch = text.toLowerCase();
       const isExchange = (exchanges as unknown as string[]).includes(exch);
       if (isExchange) ctx.session.tradeConfig.exchange = exch as Exchange;
       else await handleExchange(ctx);
       break;
+
     case "trade:clear":
-      if (text === "Yes") {
+      if (text == "Yes") {
         ctx.session.tradeConfig = {};
         ctx.session.state = "idle";
         if (ctx.session.msgId) {
@@ -155,6 +155,66 @@ async function tradeMessageHandler(ctx: Context) {
         }
       }
       break;
+
+    case "trade:execute":
+      if (text == "Proceed" && ctx.chat && ctx.from) {
+        await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
+
+        const userId = ctx.from.id;
+        const tradeConfig = ctx.session.tradeConfig;
+
+        const typingInterval = setInterval(() => {
+          if (ctx.chat) {
+            ctx.telegram.sendChatAction(ctx.chat.id, "typing").catch(() => {});
+          }
+        }, 4000);
+
+        try {
+          const order = await makeTrade(userId, tradeConfig);
+
+          clearInterval(typingInterval);
+
+          const summary = [
+            `✅ *Trade Executed!*`,
+            `• Exchange: *${tradeConfig.exchange?.toUpperCase()}*`,
+            `• Symbol: *${tradeConfig.token}/USDT*`,
+            `• Side: *${tradeConfig.side?.toUpperCase()}*`,
+            `• Leverage: *${tradeConfig.leverage}x*`,
+            `• Amount: *${tradeConfig.amount} USDT*`,
+            tradeConfig.entryPrice
+              ? `• Entry: *${tradeConfig.entryPrice}*`
+              : `• Entry: *Market*`,
+            tradeConfig.takeProfit
+              ? `• Take Profit: *${tradeConfig.takeProfit}*`
+              : "",
+            tradeConfig.stopLoss
+              ? `• Stop Loss: *${tradeConfig.stopLoss}*`
+              : "",
+            `• Order ID: \`${order.id}\``,
+          ]
+            .filter(Boolean)
+            .join("\n");
+
+          await ctx.reply(summary, { parse_mode: "Markdown" });
+        } catch (err) {
+          clearInterval(typingInterval);
+
+          console.error("Trade execution error:", err);
+          await ctx.reply(
+            `⚠️ Trade execution failed: ${
+              err instanceof Error ? err.message : String(err)
+            }`
+          );
+        }
+      }
+  }
+
+  if (state !== "trade:execute") {
+    await Promise.all(
+      ctx.session.toDeleteMessageIds.map((id) =>
+        ctx.deleteMessage(id).catch(() => {})
+      )
+    );
   }
 
   if (!["trade:execute", "trade:clear"].includes(state)) {
@@ -168,7 +228,5 @@ async function tradeMessageHandler(ctx: Context) {
       }
     );
   }
-
-  console.log("here", ctx.session.tradeConfig);
 }
 export { tradeCallback, tradeMessageHandler };

@@ -2,7 +2,7 @@ import type { Context } from "../models/telegraf.model";
 import prisma from "../db/prisma";
 import { capitalize } from "../utils/helpers";
 import { encrypt } from "../utils/encryption";
-import initExchange from "./exchange";
+import { initExchange } from "./exchange";
 import { REPORT } from "../constants";
 
 async function finalizeExchangeRegistration(ctx: Context) {

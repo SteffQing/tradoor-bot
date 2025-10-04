@@ -1,4 +1,6 @@
+import type { TradeConfig } from "../models/db.model";
 import type { Context } from "../models/telegraf.model";
+import { capitalize } from "../utils/helpers";
 
 const requiredFields = [
   "side",
@@ -7,6 +9,20 @@ const requiredFields = [
   "amount",
   "exchange",
 ] as const;
+
+function formatTradeConfigMessage(config: TradeConfig) {
+  return (
+    `Direction: ${config.side!}\n` +
+    `Token: ${config.token!}\n` +
+    `Leverage: ${config.leverage!}x\n` +
+    `Amount: ${config.amount!} USDT\n` +
+    `Entry Price: ${config.entryPrice || "Market Price"}\n` +
+    `Stop Loss: ${config.stopLoss || "Not set"}\n` +
+    `Take Profit: ${config.takeProfit || "Not set"}\n` +
+    `Exchange: ${capitalize(config.exchange!)}\n\n` +
+    "⚠️ Remember: trading futures is risky. Ensure your settings match your risk tolerance."
+  );
+}
 
 export default async function handleExecute(ctx: Context) {
   const config = ctx.session.tradeConfig;
@@ -28,7 +44,7 @@ export default async function handleExecute(ctx: Context) {
 
   const { message_id } = await ctx.reply(
     `✅ Ready to execute trade with the following configuration:\n\n` +
-      //   formatTradeConfigMessage(ctx.session.tradeConfig) +
+      formatTradeConfigMessage(config) +
       "\n\nDo you want to proceed?",
     {
       reply_markup: {

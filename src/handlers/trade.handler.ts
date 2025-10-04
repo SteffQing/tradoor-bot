@@ -16,7 +16,7 @@ async function handleSide(ctx: Context) {
 
 async function handleToken(ctx: Context) {
   const { message_id } = await ctx.reply(
-    "Please enter the token symbol you want to trade (e.g., BTC/USDT):"
+    "Please enter the token symbol you want to trade (e.g., BTC):"
   );
   ctx.session.state = "trade:token";
   ctx.session.toDeleteMessageIds.push(message_id);
