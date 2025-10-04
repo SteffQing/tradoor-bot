@@ -8,4 +8,6 @@ const exchanges = [
 ] as const;
 type Exchange = (typeof exchanges)[number];
 
-export { exchanges, type Exchange };
+const REPORT = 976665869;
+
+export { exchanges, type Exchange, REPORT };

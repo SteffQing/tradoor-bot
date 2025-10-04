@@ -65,6 +65,7 @@ async function exchangeMessageHandler(ctx: Context) {
 
   const text = ctx.message?.text?.trim();
   if (!text) return;
+  ctx.deleteMessage(ctx.message.message_id).catch(() => {});
 
   switch (ctx.session.state) {
     case "register:api_key":

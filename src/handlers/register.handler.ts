@@ -3,6 +3,7 @@ import prisma from "../db/prisma";
 import { capitalize } from "../utils/helpers";
 import { encrypt } from "../utils/encryption";
 import initExchange from "./exchange";
+import { REPORT } from "../constants";
 
 async function finalizeExchangeRegistration(ctx: Context) {
   const uid = ctx.from?.id;
@@ -11,6 +12,7 @@ async function finalizeExchangeRegistration(ctx: Context) {
 
   if (!uid || !exchangeName || !apiKey || !apiSecret) return;
   if (ctx.chat?.type !== "private") return;
+  let msgId;
 
   try {
     await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
@@ -41,18 +43,42 @@ async function finalizeExchangeRegistration(ctx: Context) {
     await ctx.reply(`✅ ${capitalize(exchangeName)} registered successfully!`);
   } catch (err: any) {
     console.error("Exchange registration error:", err);
+    await ctx.telegram.sendMessage(
+      REPORT,
+      `⚠️ Exchange registration error for user ${uid} on ${exchangeName}:\n${JSON.stringify(
+        err,
+        null,
+        2
+      )}`
+    );
+
     ctx.session.state = "register:api_key";
     ctx.session.exchangeConfig = undefined;
-    await ctx.reply(
-      "⚠️ Failed to register exchange. Check your credentials and try again.\nPlease enter your API key again:"
-    );
+
+    const isTimeout =
+      err instanceof Error &&
+      (err.name === "RequestTimeout" || err.message.includes("RequestTimeout"));
+
+    const { message_id } = isTimeout
+      ? await ctx.reply(
+          `⚠️ The exchange request timed out. This often happens if ${capitalize(
+            exchangeName
+          )} blocks your region.\n` +
+            "Try using a VPN in a supported region and then enter your API key again or /register a different exchange:"
+        )
+      : await ctx.reply(
+          "⚠️ Failed to register exchange. Check your credentials and try again.\n" +
+            "Please enter your API key again:"
+        );
+
+    msgId = message_id;
   } finally {
     await Promise.all(
       ctx.session.toDeleteMessageIds.map((id) =>
         ctx.deleteMessage(id).catch(() => {})
       )
     );
-    ctx.session.toDeleteMessageIds = [];
+    ctx.session.toDeleteMessageIds = [msgId].filter(Boolean) as number[];
   }
 }
 

@@ -11,20 +11,28 @@ async function registerExchangeCmd(ctx: Context) {
     await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
 
     const keyboard = await exchangeRegistrationKeyboard(uid);
+    ctx.deleteMessage(ctx.message?.message_id).catch(() => {});
 
     if (!keyboard) {
-      await ctx.reply(
+      const { message_id } = await ctx.reply(
         "✅ You have already registered all supported exchanges."
       );
+      ctx.session.toDeleteMessageIds.push(message_id);
       return;
     }
+    ctx.session.state = "idle";
+    ctx.session.exchange = undefined;
 
-    await ctx.reply("Select an exchange to register:", {
+    const { message_id } = await ctx.reply("Select an exchange to register:", {
       reply_markup: keyboard,
     });
+    ctx.session.toDeleteMessageIds.push(message_id);
   } catch (err) {
     console.error("Error in /register command:", err);
-    await ctx.reply("⚠️ Something went wrong while loading exchanges.");
+    const { message_id } = await ctx.reply(
+      "⚠️ Something went wrong while loading exchanges."
+    );
+    ctx.session.toDeleteMessageIds.push(message_id);
   }
 }
 
