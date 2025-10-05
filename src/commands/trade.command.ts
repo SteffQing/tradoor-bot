@@ -2,6 +2,7 @@ import { tradeKeyboard } from "../keyboards/trade";
 import type { Context } from "../models/telegraf.model";
 import prisma from "../db/prisma";
 import { tradeMsg } from "../constants";
+import { reset } from "../utils/helpers";
 
 async function tradeCmd(ctx: Context) {
   if (ctx.chat?.type !== "private") return;
@@ -10,8 +11,7 @@ async function tradeCmd(ctx: Context) {
   if (!userId) return;
 
   try {
-    await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
-    await ctx.deleteMessage(ctx.message?.message_id).catch(() => {});
+    await reset(ctx);
 
     const userDefaults = await prisma.user.findUnique({
       where: { id: userId },

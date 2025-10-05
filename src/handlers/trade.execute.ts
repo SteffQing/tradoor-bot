@@ -99,16 +99,25 @@ async function executeTrade(ctx: Context) {
       .filter(Boolean)
       .join("\n");
 
-    await ctx.reply(summary, { parse_mode: "Markdown" });
+    await Promise.all(
+      ctx.session.toDeleteMessageIds.map((id) =>
+        ctx.deleteMessage(id).catch(() => {})
+      )
+    );
+
+    const { message_id } = await ctx.reply(summary, { parse_mode: "Markdown" });
+    ctx.session.toDeleteMessageIds.push(message_id);
   } catch (err) {
     clearInterval(typingInterval);
 
     console.error("Trade execution error:", err);
-    await ctx.reply(
+
+    const { message_id } = await ctx.reply(
       err instanceof Error
         ? err.message
         : `⚠️ Trade execution failed: ${String(err)}`
     );
+    ctx.session.toDeleteMessageIds.push(message_id);
   }
 }
 

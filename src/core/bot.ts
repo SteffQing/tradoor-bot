@@ -9,6 +9,7 @@ import {
   tradeCmd,
   startCmd,
   helpCmd,
+  botCommands,
 } from "../commands/exports";
 import {
   exchangeMessageHandler,
@@ -36,6 +37,8 @@ async function init(fastify: FastifyInstance) {
             store,
           })
         );
+
+        await bot.telegram.setMyCommands(botCommands);
 
         bot.start(startCmd);
         bot.command("help", helpCmd);

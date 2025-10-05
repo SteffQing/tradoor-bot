@@ -116,7 +116,7 @@ async function tradeMessageHandler(ctx: Context) {
 
     case "trade:entryPrice":
       const ep = parsePositiveNumber(text);
-      if (ep) ctx.session.tradeConfig.amount = ep.toString();
+      if (ep) ctx.session.tradeConfig.entryPrice = ep.toString();
       else await handleEntryPrice(ctx);
       break;
 
@@ -168,15 +168,11 @@ async function tradeMessageHandler(ctx: Context) {
   }
 
   if (!["trade:execute", "trade:clear"].includes(state)) {
-    await ctx.telegram.editMessageText(
-      ctx.chat?.id,
-      ctx.session.msgId,
-      undefined,
-      tradeMsg,
-      {
+    await ctx.telegram
+      .editMessageText(ctx.chat?.id, ctx.session.msgId, undefined, tradeMsg, {
         reply_markup: tradeKeyboard(ctx.session.tradeConfig),
-      }
-    );
+      })
+      .catch(() => {});
   }
 }
 export { tradeCallback, tradeMessageHandler };

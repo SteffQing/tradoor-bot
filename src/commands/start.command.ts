@@ -1,15 +1,21 @@
 import type { Context } from "../models/telegraf.model";
-import { getDefaultSession } from "../utils";
+import { reset } from "../utils/helpers";
 import botCommands from "./commands";
 
 async function startCmd(ctx: Context) {
   if (ctx.chat?.type !== "private") return;
   try {
-    ctx.session = getDefaultSession();
+    await reset(ctx);
 
-    await ctx.reply("Hello Tradoor 🫡");
+    const { message_id } = await ctx.reply("Hello Tradoor 🫡");
+    ctx.session.toDeleteMessageIds.push(message_id);
   } catch (error) {
-    await ctx.reply("An error occurred. Please try again later.");
+    const { message_id } = await ctx.reply(
+      "An error occurred. Please try again later."
+    );
+    ctx.session.toDeleteMessageIds.push(message_id);
+  } finally {
+    await ctx.deleteMessage(ctx.message?.message_id).catch(() => {});
   }
 }
 
@@ -18,7 +24,12 @@ async function helpCmd(ctx: Context) {
     .map((c) => `/${c.command} - ${c.description}`)
     .join("\n");
 
-  await ctx.reply(`Here are the available commands:\n\n${helpText}`);
+  const { message_id } = await ctx.reply(
+    `Here are the available commands:\n\n${helpText}`
+  );
+
+  await ctx.deleteMessage(ctx.message?.message_id).catch(() => {});
+  ctx.session.toDeleteMessageIds.push(message_id);
 }
 
 export { startCmd, helpCmd };
