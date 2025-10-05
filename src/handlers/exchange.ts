@@ -21,6 +21,7 @@ async function initExchange(name: Exchange, params: ExchangeConfig) {
     secret: apiSecret,
     ...(password ? { password } : {}),
     enableRateLimit: true,
+    options: { defaultType: name === "binanceusdm" ? "future" : "swap" },
   });
 
   await exchange.loadMarkets();
@@ -60,7 +61,8 @@ async function makeTrade(uid: number, params: TradeConfig) {
     (m) =>
       m.base === token.toUpperCase() &&
       m.quote === "USDT" &&
-      m.type === "future" // strictly futures
+      // m.type === "future" // strictly futures
+      m.swap === true
   );
   if (!market) {
     throw new Error(
@@ -70,6 +72,8 @@ async function makeTrade(uid: number, params: TradeConfig) {
     );
   }
 
+  // console.log(market);
+
   const symbol = market.symbol;
   const orderType = params.entryPrice ? "limit" : "market";
   const tradeAmount = exchange.amountToPrecision(symbol, parseFloat(amount));
@@ -78,18 +82,8 @@ async function makeTrade(uid: number, params: TradeConfig) {
     try {
       await exchange.setLeverage(parseInt(leverage), symbol);
     } catch (err) {
-      if (/delivery/i.test((err as Error).message)) {
-        throw new Error(
-          `Your API key does not have the required futures permissions for this contract. ` +
-            `Check your ${capitalize(
-              exchangeName
-            )} dashboard and enable USDT-margined futures.`
-        );
-      }
-      console.warn(`Leverage setting failed on ${exchangeName}: ${err}`);
-      throw new Error(
-        `Leverage setting failed on ${capitalize(exchangeName)}: ${err}`
-      );
+      console.error("Set Leverage Error", err);
+      throw new Error(formatCcxtError(err));
     }
   }
 
@@ -113,6 +107,20 @@ async function makeTrade(uid: number, params: TradeConfig) {
   );
 
   return order;
+}
+
+function formatCcxtError(error: unknown): string {
+  const err = error as Error;
+  try {
+    const parsed = JSON.parse(err.message.replace(/^[^{]+/, ""));
+    if (parsed?.message) return parsed.message;
+  } catch (_) {}
+
+  if (err.constructor?.name) {
+    return `${err.constructor.name}: ${err.message}`;
+  }
+
+  return err.message || "Unknown exchange error";
 }
 
 export { initExchange, makeTrade };

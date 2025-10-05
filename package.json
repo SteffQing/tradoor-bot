@@ -9,7 +9,8 @@
     "build:watch": "tsc -w -p tsconfig.json",
     "start": "nodemon dist/index.js",
     "dev": "concurrently \"pnpm build:watch\" \"pnpm start\"",
-"postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "bot": "node dist/index.js"
   },
   "keywords": [],
   "author": "",

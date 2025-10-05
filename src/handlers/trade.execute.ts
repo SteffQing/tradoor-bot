@@ -1,6 +1,7 @@
 import type { TradeConfig } from "../models/db.model";
 import type { Context } from "../models/telegraf.model";
 import { capitalize } from "../utils/helpers";
+import { makeTrade } from "./exchange";
 
 const requiredFields = [
   "side",
@@ -24,7 +25,7 @@ function formatTradeConfigMessage(config: TradeConfig) {
   );
 }
 
-export default async function handleExecute(ctx: Context) {
+async function handleExecute(ctx: Context) {
   const config = ctx.session.tradeConfig;
   if (!config) return;
 
@@ -57,3 +58,58 @@ export default async function handleExecute(ctx: Context) {
 
   ctx.session.toDeleteMessageIds.push(message_id);
 }
+
+async function executeTrade(ctx: Context) {
+  if (!ctx.chat || !ctx.from) return ctx.reply("Cannot proceed");
+
+  await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
+
+  const userId = ctx.from.id;
+  const tradeConfig = ctx.session.tradeConfig;
+  if (!tradeConfig)
+    return ctx.reply("Trade config is empty. This shouldn't happen");
+
+  const typingInterval = setInterval(() => {
+    if (ctx.chat) {
+      ctx.telegram.sendChatAction(ctx.chat.id, "typing").catch(() => {});
+    }
+  }, 4000);
+
+  try {
+    const order = await makeTrade(userId, tradeConfig);
+
+    clearInterval(typingInterval);
+
+    const summary = [
+      `✅ *Trade Executed!*`,
+      `• Exchange: *${tradeConfig.exchange?.toUpperCase()}*`,
+      `• Symbol: *${tradeConfig.token}/USDT*`,
+      `• Direction: *${tradeConfig.side?.toUpperCase()}*`,
+      `• Leverage: *${tradeConfig.leverage}x*`,
+      `• Amount: *${tradeConfig.amount} USDT*`,
+      tradeConfig.entryPrice
+        ? `• Entry: *${tradeConfig.entryPrice}*`
+        : `• Entry: *Market*`,
+      tradeConfig.takeProfit
+        ? `• Take Profit: *${tradeConfig.takeProfit}*`
+        : "",
+      tradeConfig.stopLoss ? `• Stop Loss: *${tradeConfig.stopLoss}*` : "",
+      `• Order ID: \`${order.id}\``,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    await ctx.reply(summary, { parse_mode: "Markdown" });
+  } catch (err) {
+    clearInterval(typingInterval);
+
+    console.error("Trade execution error:", err);
+    await ctx.reply(
+      err instanceof Error
+        ? err.message
+        : `⚠️ Trade execution failed: ${String(err)}`
+    );
+  }
+}
+
+export { handleExecute, executeTrade };

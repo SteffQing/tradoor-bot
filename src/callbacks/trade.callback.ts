@@ -1,4 +1,3 @@
-// import { tradeKeyboard } from "../keyboards/trade";
 import type { Context } from "../models/telegraf.model";
 import type { TradeConfig } from "../models/db.model";
 import {
@@ -12,11 +11,10 @@ import {
   handleTakeProfit,
   handleToken,
 } from "../handlers/trade.handler";
-import handleExecute from "../handlers/trade.execute";
+import { handleExecute, executeTrade } from "../handlers/trade.execute";
 import { parseLeverage, parsePositiveNumber } from "../utils/helpers";
 import { Exchange, exchanges, tradeMsg } from "../constants";
 import { tradeKeyboard } from "../keyboards/trade";
-import { makeTrade } from "../handlers/exchange";
 
 async function tradeCallback(ctx: Context) {
   if (
@@ -157,56 +155,8 @@ async function tradeMessageHandler(ctx: Context) {
       break;
 
     case "trade:execute":
-      if (text == "Proceed" && ctx.chat && ctx.from) {
-        await ctx.telegram.sendChatAction(ctx.chat.id, "typing");
-
-        const userId = ctx.from.id;
-        const tradeConfig = ctx.session.tradeConfig;
-
-        const typingInterval = setInterval(() => {
-          if (ctx.chat) {
-            ctx.telegram.sendChatAction(ctx.chat.id, "typing").catch(() => {});
-          }
-        }, 4000);
-
-        try {
-          const order = await makeTrade(userId, tradeConfig);
-
-          clearInterval(typingInterval);
-
-          const summary = [
-            `✅ *Trade Executed!*`,
-            `• Exchange: *${tradeConfig.exchange?.toUpperCase()}*`,
-            `• Symbol: *${tradeConfig.token}/USDT*`,
-            `• Side: *${tradeConfig.side?.toUpperCase()}*`,
-            `• Leverage: *${tradeConfig.leverage}x*`,
-            `• Amount: *${tradeConfig.amount} USDT*`,
-            tradeConfig.entryPrice
-              ? `• Entry: *${tradeConfig.entryPrice}*`
-              : `• Entry: *Market*`,
-            tradeConfig.takeProfit
-              ? `• Take Profit: *${tradeConfig.takeProfit}*`
-              : "",
-            tradeConfig.stopLoss
-              ? `• Stop Loss: *${tradeConfig.stopLoss}*`
-              : "",
-            `• Order ID: \`${order.id}\``,
-          ]
-            .filter(Boolean)
-            .join("\n");
-
-          await ctx.reply(summary, { parse_mode: "Markdown" });
-        } catch (err) {
-          clearInterval(typingInterval);
-
-          console.error("Trade execution error:", err);
-          await ctx.reply(
-            err instanceof Error
-              ? err.message
-              : `⚠️ Trade execution failed: ${String(err)}`
-          );
-        }
-      }
+      if (text == "Proceed") await executeTrade(ctx);
+      else if (text == "Cancel") await handleClear(ctx, true);
   }
 
   if (state !== "trade:execute") {

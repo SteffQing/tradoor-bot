@@ -91,19 +91,20 @@ async function handleExchange(ctx: Context) {
   ctx.session.state = "trade:exchange";
   ctx.session.toDeleteMessageIds.push(message_id);
 }
-async function handleClear(ctx: Context) {
+async function handleClear(ctx: Context, cancelExec?: boolean) {
   if (!ctx.session.tradeConfig) return;
 
-  const { message_id } = await ctx.reply(
-    "Are you sure you want to clear your trade config?",
-    {
-      reply_markup: {
-        keyboard: [[{ text: "Yes" }, { text: "No" }]],
-        resize_keyboard: true,
-        one_time_keyboard: true,
-      },
-    }
-  );
+  const text = cancelExec
+    ? "Are you sure you wish to cancel trade execution and clear your trade config?"
+    : "Are you sure you want to clear your trade config?";
+
+  const { message_id } = await ctx.reply(text, {
+    reply_markup: {
+      keyboard: [[{ text: "Yes" }, { text: "No" }]],
+      resize_keyboard: true,
+      one_time_keyboard: true,
+    },
+  });
 
   ctx.session.state = "trade:clear";
   ctx.session.toDeleteMessageIds.push(message_id);
